@@ -101,6 +101,33 @@ Compare changes on the same fixed molecules and inspect gains by class and on ti
 
 For controlled stress tests, repeat the dev command with `--simulate catalog-only` to remove exact library references from catalog-covered Class 1 queries, or `--simulate catalog-absent` to remove their exact catalog entries too. These diagnostics preserve measured query spectra and the remaining analogs. Record their metrics separately from the primary panels.
 
+## Library confidence experiment
+
+Freeze the catalog and library candidates. Compare unconditional library-first ordering, catalog-first ordering on the same candidates, and a rule that promotes a single library hit when its cosine and lead over the runner-up meet thresholds. Catalog-only ordering provides the historical control.
+
+Prepare the COCONUT and PubChemLite snapshots with the commands above. Pass both catalogs in the same order to `build`, `evaluate` and `calibrate`. Export `fit.parquet` and `dev_candidates.parquet` before running:
+
+```sh
+casmi_split=splits/v3_official_coconut_pubchemlite
+mkdir -p runs
+python casmi_library_gate.py calibrate --split "$casmi_split" \
+  --catalog data/coconut_2026_11_canonical.parquet \
+  --catalog data/pubchem_2026_11_20/PubChemLite_exposomics_20260828_canonical.parquet \
+  --key-cache data/train_canonical.parquet --output runs/library_thresholds.json
+python casmi_library_gate.py evaluate --split "$casmi_split" \
+  --candidates "$casmi_split/dev_candidates.parquet" \
+  --thresholds runs/library_thresholds.json --output runs/library_gate_metrics.json
+```
+
+The fit-only calibration selected a minimum cosine of **0.55** and a minimum margin of **0.00** on 301 molecules and their truth-masked counterparts. The score cutoff is a heuristic learned from a mix of source holdouts and simulated catalog-only queries.
+
+| Development slice | Library first | Confidence gated | Paired MRR@25 change (95% CI) |
+| --- | ---: | ---: | ---: |
+| Class 1 (1,278) | 0.7835 | 0.7363 | −0.0472 [−0.0574, −0.0371] |
+| Class 2 (1,003) | 0.1178 | 0.2049 | +0.0871 [+0.0760, +0.0982] |
+
+The gate recovered Class 2 rank while losing 14 net Class 1 first-place hits. The standalone experiment leaves submission ranking at the existing baseline.
+
 ## External benchmark for generation
 
 Revisit this when the pipeline can generate structures. Freeze the reference library, catalogs, and model data to before an independent discovery study disclosed its compounds. Use date and provenance records to verify that the structure was absent before disclosure. Score measured spectra with independently confirmed structures, preferably NMR-confirmed. Audit overlap with any pretrained model where its data is known, and report uncertainty where it is unknown. [BUDDY discovery examples](https://doi.org/10.1038/s41592-023-01850-x)

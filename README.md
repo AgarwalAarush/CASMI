@@ -47,3 +47,5 @@ Pass `--catalog PATH` for each prepared catalog. The runner checks coverage, can
 | PubChem coverage | Audit membership on the frozen dev IDs. Use the recall gaps to decide how far to expand retrieval. |
 
 The workstreams can run in parallel against the same frozen dev split and evaluator. Compare each change individually before combining them in a submission.
+
+The first library-confidence experiment moved local Class 2 MRR@25 from **0.118 to 0.205** and moved local Class 1 from **0.784 to 0.736**. The cutoff was selected on the fit partition. This experiment is available for local comparison. [Method and commands](CASMI_EVALUATION.md#library-confidence-experiment)
